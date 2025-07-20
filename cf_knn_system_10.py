@@ -27,6 +27,7 @@ def certainty_factor(d, t):
     cf_wp = min(0.2 if d < 0.1 else 0.7, 0.9 if t > 20 else 0.3)
     return ("Douglas Fir" if cf_df > cf_wp else "White Pine", cf_df, cf_wp)
 
+# Training KNN
 X = df[["Diameter", "Tinggi"]]
 y = df["Jenis"]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -37,21 +38,32 @@ def predict_system(diameter_input, tinggi_input, image_path=None):
     cf_result, cf_df, cf_wp = certainty_factor(diameter_input, tinggi_input)
     knn_pred = knn.predict([[diameter_input, tinggi_input]])[0]
 
-    if image_path:
-        image_features = extract_image_features(image_path)
-        mean_gray = image_features["mean_gray"]
-        std_gray = image_features["std_gray"]
-        print(f"[Vision] Mean Gray: {mean_gray:.2f}, Std Gray: {std_gray:.2f}")
-
-    valid = (cf_result == knn_pred)
-    print("=== HASIL PREDIKSI ===")
-    print(f"Diameter: {diameter_input}, Tinggi: {tinggi_input}")
+    print("\n=== HASIL PREDIKSI ===")
+    print(f"Diameter: {diameter_input:.3f}, Tinggi: {tinggi_input:.2f}")
     print(f"[CF] Prediksi: {cf_result} (DF={cf_df}, WP={cf_wp})")
     print(f"[KNN] Prediksi: {knn_pred}")
-    if valid:
-        print(f"✅ Final: {cf_result} (divalidasi oleh KNN)")
-    else:
-        print(f"⚠️ Final: {cf_result} (bertentangan dengan KNN, perlu verifikasi)")
 
-# Contoh:
-# predict_system(0.095, 26.1, "pine_tree.jpg")
+    if image_path:
+        try:
+            image_features = extract_image_features(image_path)
+            mean_gray = image_features["mean_gray"]
+            std_gray = image_features["std_gray"]
+            print(f"[Vision] Mean Gray: {mean_gray:.2f}, Std Gray: {std_gray:.2f}")
+        except FileNotFoundError as e:
+            print(f"[Vision] â Gagal membaca gambar: {e}")
+        except Exception as e:
+            print(f"[Vision] â ï¸ Terjadi kesalahan saat ekstraksi gambar: {e}")
+
+    valid = (cf_result == knn_pred)
+    if valid:
+        print(f"â Final: {cf_result} (divalidasi oleh KNN)")
+    else:
+        print(f"â ï¸ Final: {cf_result} (bertentangan dengan KNN, perlu verifikasi)")
+
+# Eksekusi langsung (gambar opsional)
+if __name__ == "__main__":
+    # Contoh: tanpa gambar
+    predict_system(0.095, 26.1)
+
+    # Contoh: dengan gambar (jika ada)
+    # predict_system(0.095, 26.1, "pine_tree.jpg")
